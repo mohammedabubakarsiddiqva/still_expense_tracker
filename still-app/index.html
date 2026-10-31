@@ -92,7 +92,8 @@ function pager(k,n,sz){const pg=Math.max(1,Math.ceil(n/sz));if(P[k]>=pg)P[k]=pg-
 const got=t=>(t.rec?t.rec.got:[]).reduce((a,x)=>a+x.a,0);
 const inM=m=>S.tx.filter(t=>mk(t.date)===m);
 const lm=m=>S.loans.filter(l=>mk(l.date)===m),lent=m=>inM(m).filter(t=>t.rec&&t.rec.type==='loan').reduce((a,t)=>a+t.amount,0),lback=m=>lm(m).reduce((a,l)=>a+l.back.reduce((b,x)=>b+x.a,0),0),pT=m=>inM(m).reduce((a,t)=>a+t.amount,0),rT=m=>inM(m).reduce((a,t)=>a+got(t),0),paid=m=>pT(m),rcv=m=>rT(m),net=m=>paid(m)-rcv(m);
-const est=m=>S.tx.reduce((a,t)=>{if(t.rec&&t.rec.type==='loan')return a;const d=Math.max(1,+t.dur||1),s=mi(mk(t.date)),i=mi(m);return a+(i>=s&&i<s+d?t.amount/d:0)},0);
+const DAY=864e5,dp=s=>Date.UTC(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10));
+const est=m=>{const y=+m.slice(0,4),mo=+m.slice(5,7),ms=Date.UTC(y,mo-1,1),me=Date.UTC(y,mo,1);return S.tx.reduce((a,t)=>{if(t.rec&&t.rec.type==='loan')return a;const d=+t.dur||0,s=dp(t.date);if(!d)return a+(mk(t.date)===m?t.amount:0);const Y=+t.date.slice(0,4),M=+t.date.slice(5,7)-1,dd=+t.date.slice(8,10),e=Date.UTC(Y,M+d,Math.min(dd,new Date(Date.UTC(Y,M+d+1,0)).getUTCDate())),ov=Math.max(0,Math.min(e,me)-Math.max(s,ms))/DAY;return a+t.amount*ov/((e-s)/DAY)},0)};
 const pend=t=>t.rec?Math.max(0,t.rec.exp-got(t)):0,lpend=l=>Math.max(0,l.amount-l.back.reduce((a,x)=>a+x.a,0));
 const catName=id=>(S.cats.find(c=>c.id===id)||{name:'(removed)'}).name;
 const months=()=>{const a=[];let i=mi(mk(S.start));const e=mi(cm);for(;i<=e;i++)a.push(Math.floor(i/12)+'-'+String(i%12+1).padStart(2,'0'));const f=S.tx.map(t=>mk(t.date)).sort()[0];if(f&&f<a[0])return months2(f);return a};
